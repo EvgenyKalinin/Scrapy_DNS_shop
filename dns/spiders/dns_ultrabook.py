@@ -3,6 +3,7 @@ import scrapy
 
 class DnsUltrabookSpider(scrapy.Spider):
     page = 1
+    last_page = None
     name = 'dns_ultrabook'
     allowed_domains = ['dns-shop.ru']
     start_urls = ['https://www.dns-shop.ru/catalog/17a892f816404e77/?f[65c]=264d&p=1']
@@ -34,20 +35,21 @@ class DnsUltrabookSpider(scrapy.Spider):
                 'ram': info[4],
                 'ssd': info[5],
                 'card': info[6]
-
             }
 
             # Generate Information for scraping
             yield scraped_info
 
         # Pagination
-        # TODO: infinity scraping
-        max_page = response.css('.pagination-widget__page::attr(data-page-number)').extract()[-1]
-        if max_page == DnsUltrabookSpider.page:
+        # Create Last page
+        if not self.last_page:
+            self.last_page = response.css('.pagination-widget__page::attr(data-page-number)').extract()[-1]
+        # Exit if scrap last page
+        if int(self.last_page) == int(self.page):
             yield scraped_info
         else:
-            DnsUltrabookSpider.page += 1
-            next_page = 'https://www.dns-shop.ru/catalog/17a892f816404e77/?f[65c]=264d&p=%s' % DnsUltrabookSpider.page 
+            self.page += 1
+            next_page = 'https://www.dns-shop.ru/catalog/17a892f816404e77/?f[65c]=264d&p=%s' % self.page
             if next_page:
                 yield scrapy.Request(response.urljoin(next_page),
                                      callback=self.parse)
